@@ -23,6 +23,9 @@
       "streamSettings": {
         "network": "tcp",
         "security": "reality",
+        "sockopt": {
+          "tcpFastOpen": true
+        },
 		"realitySettings": {
 			"show": false,
 			"dest": "",
