@@ -5,6 +5,10 @@ LOCKFILE=config/.lockfile
 if [ ! -f $LOCKFILE ]
 then
 
+if [ ! -d /opt/xray/config ]; then
+    mkdir -p /opt/xray/config
+fi
+
 if [ ! -f /opt/xray/config/config.json ]; then
     cp /opt/xray/config.json /opt/xray/config/config.json
 fi
