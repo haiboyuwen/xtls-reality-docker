@@ -5,6 +5,10 @@ LOCKFILE=config/.lockfile
 if [ ! -f $LOCKFILE ]
 then
 
+if [ ! -f /opt/xray/config/config.json ]; then
+    cp /opt/xray/config.json /opt/xray/config/config.json
+fi
+
 #generate uuid
 echo "Generate UUID..."
 /opt/xray/xray uuid > config/uuid
@@ -20,6 +24,7 @@ awk '/Private/{print $3}' config/keys > config/private
 
 UUID=$(cat config/uuid)
 PRIVATE=$(cat config/private)
+
 
 #set uuid in config.json
 sed -i 's/"id":.*/"id": "'${UUID}'",/' config/config.json
