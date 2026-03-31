@@ -19,7 +19,6 @@ COPY config.json config/config.json
 COPY get-client-qr.sh .
 COPY get-client-settings.sh .
 COPY regenerate-client-settings.sh .
-COPY generate-subscription.sh .
 COPY entrypoint.sh .
 
 EXPOSE 443
