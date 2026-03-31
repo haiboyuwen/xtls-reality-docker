@@ -23,7 +23,7 @@ echo "Generate public & private keys..."
 /opt/xray/xray x25519 > config/keys
 
 #Create files with Public & Private keys
-awk '/Public/{print $2}' config/keys > config/public
+awk '/Public/{print $3}' config/keys > config/public
 awk '/Private/{print $2}' config/keys > config/private
 
 UUID=$(cat config/uuid)
