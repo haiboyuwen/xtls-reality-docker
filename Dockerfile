@@ -1,12 +1,12 @@
 FROM alpine:latest
-LABEL mantainer="ywhb"
+LABEL mantainer="myelectronix"
 
 ARG XRAY_CORE_VERSION=v26.3.27
 ENV SNI=www.samsung.com
 ENV SHORT_ID=aabbccdd
 
 RUN set -e &&\
-    apk add --no-cache bash libqrencode curl &&\
+    apk add --no-cache bash libqrencode libqrencode-tools curl &&\
     wget https://github.com/XTLS/Xray-core/releases/download/${XRAY_CORE_VERSION}/Xray-linux-64.zip &&\
     mkdir /opt/xray &&\
     mkdir /opt/xray/config &&\
@@ -23,7 +23,3 @@ COPY entrypoint.sh .
 
 EXPOSE 443
 ENTRYPOINT [ "/bin/bash","./entrypoint.sh" ]
-
-
-
-
