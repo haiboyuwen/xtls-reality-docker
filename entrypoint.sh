@@ -1,50 +1,45 @@
 #!/bin/bash
 
-#LOCKFILE for generate uuid and keys in first start
-LOCKFILE=config/.lockfile
-if [ ! -f $LOCKFILE ]
-then
+# 定义路径
+LOCKFILE="/opt/xray/config/.lockfile"
+CONFIG_FILE="/opt/xray/config/config.json"
+TEMPLATE_FILE="/opt/xray/config.json"
 
-if [ ! -d /opt/xray/config ]; then
-    mkdir -p /opt/xray/config
+# 初始化配置目录和文件
+
+if [ ! -f "$CONFIG_FILE" ]; then
+    cp "$TEMPLATE_FILE" "$CONFIG_FILE"
 fi
 
-if [ ! -f /opt/xray/config/config.json ]; then
-    cp /opt/xray/config.json /opt/xray/config/config.json
+if [ ! -f "$LOCKFILE" ]; then
+    echo "首次启动：生成 UUID 和 Keys..."
+    /opt/xray/xray uuid > /opt/xray/config/uuid
+    /opt/xray/xray x25519 > /opt/xray/config/keys
+
+    # 提取密钥和 UUID
+    UUID=$(cat /opt/xray/config/uuid)
+    PRIV=$(awk '/Private/{print $2}' /opt/xray/config/keys)
+    PUB=$(awk '/Public/{print $3}' /opt/xray/config/keys)
+
+    echo "$PRIV" > /opt/xray/config/private
+    echo "$PUB" > /opt/xray/config/public
+
+    # 使用 jq 精准注入 UUID 和 私钥，绝不破坏其它结构
+    jq --arg id "$UUID" --arg pk "$PRIV" \
+    '.inbounds[0].settings.clients[0].id = $id | .inbounds[0].streamSettings.realitySettings.privateKey = $pk' \
+    "$CONFIG_FILE" > "$CONFIG_FILE.tmp" && mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
+
+    touch "$LOCKFILE"
 fi
 
-#generate uuid
-echo "Generate UUID..."
-/opt/xray/xray uuid > config/uuid
+# 无论是否首启，动态更新 SNI 和 ShortID
+# 顺便确保 tcpFastOpen 始终为 true
+jq --arg sni "$SNI" --arg sid "$SHORT_ID" \
+' .inbounds[0].streamSettings.realitySettings.dest = ($sni + ":443") |
+  .inbounds[0].streamSettings.realitySettings.serverNames = [$sni] |
+  .inbounds[0].streamSettings.realitySettings.shortIds = [$sid] |
+  .inbounds[0].streamSettings.sockopt.tcpFastOpen = true' \
+"$CONFIG_FILE" > "$CONFIG_FILE.tmp" && mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
 
-
-#generate Public & Private keys
-echo "Generate public & private keys..."
-/opt/xray/xray x25519 > config/keys
-
-#Create files with Public & Private keys
-awk '/Public/{print $3}' config/keys > config/public
-awk '/Private/{print $2}' config/keys > config/private
-
-UUID=$(cat config/uuid)
-PRIVATE=$(cat config/private)
-
-
-#set uuid in config.json
-sed -i 's/"id":.*/"id": "'${UUID}'",/' config/config.json
-
-#set private key in config.json
-sed -i 's/"privateKey":.*/"privateKey": "'${PRIVATE}'",/' config/config.json
-
-#create lockfile
-touch $LOCKFILE
-fi
-
-sed -i 's/"dest":.*/"dest": "'${SNI}':443",/' config/config.json
-sed -i '/serverNames/{n;s/.*/\t\t\t\t"'${SNI}'"/}' config/config.json
-sed -i '/shortIds/{n;s/.*/\t\t\t\t"'${SHORT_ID}'"/}' config/config.json
-
-#run proxy
-echo "XTLS reality starting..."
-/opt/xray/xray run -config /opt/xray/config/config.json 
-
+echo "XTLS reality starting with TFO enabled..."
+exec /opt/xray/xray run -config "$CONFIG_FILE"
