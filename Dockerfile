@@ -1,7 +1,7 @@
 FROM alpine:latest
-LABEL mantainer="myelectronix"
+LABEL mantainer="ywhb"
 
-ARG XRAY_CORE_VERSION=v1.8.4
+ARG XRAY_CORE_VERSION=v26.3.27
 ENV SNI=www.samsung.com
 ENV SHORT_ID=aabbccdd
 
